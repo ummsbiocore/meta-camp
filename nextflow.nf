@@ -54,7 +54,7 @@ g_14_1_g57_0 = file(params.diamond_db, type: 'any')
 g_15_1_g57_5 = file(params.gunc_db, type: 'any')
 g_16_0_g57_54 = file(params.gtdb_db, type: 'any')
 Channel.value(params.mate).set{g_42_1_g5_5}
-(g_42_1_g67_0,g_42_1_g67_1,g_42_1_g68_38,g_42_1_g46_0,g_42_1_g46_3,g_42_1_g45_13,g_42_0_g45_43,g_42_1_g45_0) = [g_42_1_g5_5,g_42_1_g5_5,g_42_1_g5_5,g_42_1_g5_5,g_42_1_g5_5,g_42_1_g5_5,g_42_1_g5_5,g_42_1_g5_5]
+(g_42_1_g46_0,g_42_1_g46_3,g_42_1_g45_13,g_42_0_g45_43,g_42_1_g45_0,g_42_1_g68_38,g_42_1_g67_0,g_42_1_g67_1) = [g_42_1_g5_5,g_42_1_g5_5,g_42_1_g5_5,g_42_1_g5_5,g_42_1_g5_5,g_42_1_g5_5,g_42_1_g5_5,g_42_1_g5_5]
 if (params.reads){
 Channel
 	.fromFilePairs( params.reads,checkExists:true , size: params.mate == "single" ? 1 : params.mate == "pair" ? 2 : params.mate == "triple" ? 3 : params.mate == "quadruple" ? 4 : -1 ) 
@@ -1228,8 +1228,8 @@ mv ${metadata} animalcules_out/metadata.txt
 
 //* autofill
 if ($HOSTNAME == "default"){
-    $CPU = 1
-    $MEMORY = 25
+    $CPU = 24
+    $MEMORY = 64
 }
 //* platform
 //* platform
@@ -1249,7 +1249,7 @@ output:
  path "${name}_assembly/${name}_megahit.log"  ,emit:g67_0_logFile11 
  path "${name}_assembly/ctg_lens_${name}_megahit.csv" ,optional:true  ,emit:g67_0_csvFile22 
  path "${name}_assembly/ctg_stats_${name}_megahit.csv" ,optional:true  ,emit:g67_0_csvFile33 
- path "${name}_assembly/${name}_megahit.fasta"  ,emit:g67_0_fasta44 
+ path "${name}_assembly/${name}_megahit.fasta" ,optional:true  ,emit:g67_0_fasta44 
 
 container "quay.io/biocontainers/megahit:1.2.9--h8b12597_0"
 
@@ -1276,14 +1276,20 @@ megahit_optional_parameters = params.camp_short_read_asm_MegaHIT.megahit_optiona
 mkdir -p -m777 ./${name}_assembly/megahit/
 
 #run megahit at ./${name}_assembly_megahit/
-megahit ${megahit_optional_parameters} -t ${threads} -m ${memory} --force -1 ${reads_f} -2 ${reads_r} -o ./${name}_assembly/megahit/ > ./${name}_assembly/${name}_megahit.log 2>&1
+#default memory is 0.9 of total available, so don't set it
+megahit ${megahit_optional_parameters} -t ${threads}  --force -1 ${reads_f} -2 ${reads_r} -o ./${name}_assembly/megahit/ > ./${name}_assembly/${name}_megahit.log 2>&1
 
 cp ./${name}_assembly/megahit/final.contigs.fa ./${name}_assembly/${name}_megahit.fasta
 gzip ./${name}_assembly/${name}_megahit.fasta
 cp ./${name}_assembly/megahit/final.contigs.fa ./${name}_assembly/${name}_megahit.fasta
 
+if [ ! -s ${name}_assembly/${name}_megahit.fasta ]; then
+	rm -f ${name}_assembly/${name}_megahit.fasta
+	rm -f ${name}_assembly/${name}_megahit.fasta.gz
+fi
+
 # contig statistics and lengths
-if [[ ${megahit_stats} == 'yes' ]]; then
+if [[ ${megahit_stats} == 'yes' ]] && [[ -s ./${name}_assembly/${name}_megahit.fasta ]]; then
 	calc_ctg_lens.py ${name} megahit ./${name}_assembly/${name}_megahit.fasta ./${name}_assembly/megahit/ctg_stats_megahit.csv ./${name}_assembly/megahit/ctg_lens_megahit.csv
 	echo -e 'sample_name,assembler,num_ctgs,total_size,mean_ctg_len' | cat - ./${name}_assembly/megahit/ctg_stats_megahit.csv > ./${name}_assembly/ctg_stats_${name}_megahit.csv
 	echo -e 'sample_name,assembler,ctg_size' | cat - ./${name}_assembly/megahit/ctg_lens_megahit.csv > ./${name}_assembly/ctg_lens_${name}_megahit.csv
@@ -1599,12 +1605,12 @@ input:
  val mate
 
 output:
- tuple val(name), file("${name}_assembly/${name}_spades.fasta.gz")  ,emit:g67_1_fastaFile00_g67_18 
+ tuple val(name), file("${name}_assembly/${name}_spades.fasta.gz") ,optional:true  ,emit:g67_1_fastaFile00_g67_18 
  path "${name}_assembly/${name}_spades.log"  ,emit:g67_1_logFile11 
  path "ctg_lens_${name}_spades.csv" ,optional:true  ,emit:g67_1_csvFile22 
  path "ctg_stats_${name}_spades.csv" ,optional:true  ,emit:g67_1_csvFile33 
- tuple val(name), file("${name}_assembly/assembly_graph_with_scaffolds.gfa")  ,emit:g67_1_outputFileTxt44 
- path "${name}_assembly/${name}_spades.fasta"  ,emit:g67_1_fasta55 
+ tuple val(name), file("${name}_assembly/assembly_graph_with_scaffolds.gfa") ,optional:true  ,emit:g67_1_outputFileTxt44 
+ path "${name}_assembly/${name}_spades.fasta" ,optional:true  ,emit:g67_1_fasta55 
 
 container 'quay.io/biocontainers/spades:4.0.0--h5fb382e_2'
 
@@ -1623,7 +1629,7 @@ if (reads_str.contains('.gz') || reads_str.contains('.fq') || reads_str.contains
 }
 
 spades_optional_parameters = "--only-assembler" // @input, @label:"SPAdes Optional Parameters", @description:"Optional Parameters for SPAdes Short-Read Assembler"
-spades_stats = "" // @dropdown @options:"yes","no", @label:"Would you like the stats output?", @description:"Choose 'Yes' if you'd like the stats for SPAdes assembly results."
+spades_stats = "no" // @dropdown @options:"yes","no", @label:"Would you like the stats output?", @description:"Choose 'Yes' if you'd like the stats for SPAdes assembly results."
 spades_options = "Only Assembly" // @dropdown @options:"Metagenome,Bacterial (Culture),Bacterial (Meta),RNA,Viral (RNA),Viral (Meta),Only Assembly", @label:"SPAdes assembly options", @description:"Choose the assembly option you'd like to run."
 // @style @condition:{params.run_spades="Yes",spades_options,spades_stats,spades_optional_parameters},{params.run_spades="No"} @multicolumn:{spades_options,spades_stats,spades_optional_parameters}
 
@@ -1647,7 +1653,13 @@ else
 	echo 'No assembled contigs were found! The pipeline will exit!'
 	exit 1
 fi
-if [[ ${spades_stats} == 'yes' ]]; then
+
+if [ ! -s ./${name}_assembly/${name}_spades.fasta ]; then
+	rm ./${name}_assembly/${name}_spades.fasta
+	rm ./${name}_assembly/${name}_spades.fasta.gz
+fi
+
+if [[ ${spades_stats} == 'yes' ]] && [[ -s ./${name}_assembly/${name}_spades.fasta ]]; then
 	calc_ctg_lens.py ${name} spades ./${name}_assembly/${name}_spades.fasta ./${name}_assembly/spades/ctg_stats_spades.csv ./${name}_assembly/spades/ctg_lens_spades.csv
 	echo -e 'sample_name,assembler,num_ctgs,total_size,mean_ctg_len' | cat - ./${name}_assembly/spades/ctg_stats_spades.csv > ./ctg_stats_${name}_spades.csv
 	echo -e 'sample_name,assembler,ctg_size' | cat - ./${name}_assembly/spades/ctg_lens_spades.csv > ./ctg_lens_${name}_spades.csv
@@ -1810,7 +1822,7 @@ output:
  path "${name}.sam"  ,emit:g68_38_samFile10_g68_5 
  tuple val(name), file("${name}_unmapped*") ,optional:true  ,emit:g68_38_unmapped_fastq22 
 
-container "quay.io/biocontainers/bowtie2:2.5.4--h7071971_4"
+container "quay.io/biocontainers/bowtie2:2.5.4--he96a11b_6"
 
 script:
 threads = params.camp_mag_binning_Bowtie2.threads
@@ -1824,9 +1836,16 @@ fastq_r = nameArray[1]
 """
 mkdir -m777 -p ./index/
 cp ${bowtie2index} ./index/
-bowtie2 -x ./index/${name} -p ${threads} ${Bowtie2_parameters} -1 ${fastq_f} -2 ${fastq_r} -S ./${name}.sam > ./${name}.bow 2>&1
-grep -v Warning ./${name}.bow > ./${name}.tmp
-mv ./${name}.tmp ./${name}.bow
+
+if [ -f index/${name}.1.bt2 ]; then
+	bowtie2 -x ./index/${name} -p ${threads} ${Bowtie2_parameters} -1 ${fastq_f} -2 ${fastq_r} -S ./${name}.sam > ./${name}.bow 2>&1
+	grep -v Warning ./${name}.bow > ./${name}.tmp
+	mv ./${name}.tmp ./${name}.bow
+else
+	touch ${name}.bow
+	touch ${name}.sam
+fi
+
 echo 'Sample: '${name} >> ${name}.bow
 echo 'Forward fq: '${fastq_f} >> ${name}.bow
 echo 'Reverse fq: '${fastq_r} >> ${name}.bow
@@ -1853,7 +1872,7 @@ input:
  tuple val(name_f), file(fasta_file)
 
 output:
- tuple val(name), file("${name}")  ,emit:g68_5_outputDir00_g68_49 
+ tuple val(name), file("${name}")  ,emit:g68_5_outputDir00_g68_60 
  path "${name}_samtools.log"  ,emit:g68_5_logOut11 
  path "${name}"  ,emit:g68_5_outputDir21_g57_56 
 
@@ -3299,7 +3318,7 @@ g45_18_logOut11 = camp_short_read_quality_control_filter_host_reads.out.g45_18_l
 
 camp_short_read_quality_control_filter_seq_errors(g45_18_reads00_g45_39)
 g45_39_reads00_g45_40 = camp_short_read_quality_control_filter_seq_errors.out.g45_39_reads00_g45_40
-(g45_39_reads04_g45_43,g45_39_reads00_g67_0,g45_39_reads00_g67_1,g45_39_reads00_g5_5,g45_39_reads00_g68_38,g45_39_reads00_g46_0,g45_39_reads00_g46_3,g45_39_reads00_g46_17) = [g45_39_reads00_g45_40,g45_39_reads00_g45_40,g45_39_reads00_g45_40,g45_39_reads00_g45_40,g45_39_reads00_g45_40,g45_39_reads00_g45_40,g45_39_reads00_g45_40,g45_39_reads00_g45_40]
+(g45_39_reads04_g45_43,g45_39_reads00_g5_5,g45_39_reads00_g46_0,g45_39_reads00_g46_3,g45_39_reads00_g46_17,g45_39_reads00_g68_38,g45_39_reads00_g67_0,g45_39_reads00_g67_1) = [g45_39_reads00_g45_40,g45_39_reads00_g45_40,g45_39_reads00_g45_40,g45_39_reads00_g45_40,g45_39_reads00_g45_40,g45_39_reads00_g45_40,g45_39_reads00_g45_40,g45_39_reads00_g45_40]
 g45_39_reads10_g45_53 = camp_short_read_quality_control_filter_seq_errors.out.g45_39_reads10_g45_53
 
 
@@ -3518,8 +3537,8 @@ g68_38_unmapped_fastq22 = camp_mag_binning_Bowtie2.out.g68_38_unmapped_fastq22
 
 
 camp_mag_binning_Samtools(g68_38_samFile10_g68_5.collect(),g67_0_fastaFile01_g68_5)
-g68_5_outputDir00_g68_49 = camp_mag_binning_Samtools.out.g68_5_outputDir00_g68_49
-(g68_5_outputDir00_g68_60,g68_5_outputDir00_g68_61,g68_5_outputDir00_g68_58) = [g68_5_outputDir00_g68_49,g68_5_outputDir00_g68_49,g68_5_outputDir00_g68_49]
+g68_5_outputDir00_g68_60 = camp_mag_binning_Samtools.out.g68_5_outputDir00_g68_60
+(g68_5_outputDir00_g68_61,g68_5_outputDir00_g68_58,g68_5_outputDir00_g68_49) = [g68_5_outputDir00_g68_60,g68_5_outputDir00_g68_60,g68_5_outputDir00_g68_60]
 g68_5_logOut11 = camp_mag_binning_Samtools.out.g68_5_logOut11
 g68_5_outputDir21_g57_56 = camp_mag_binning_Samtools.out.g68_5_outputDir21_g57_56
 

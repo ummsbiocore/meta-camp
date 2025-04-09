@@ -67,9 +67,13 @@ for(i in 1:length(lineages)){
 
 alltax1<-rbindlist(alltax)
 
-tax_to_del<-alltax1$id[alltax1$superkingdom == ""]
-alltax1<-alltax1[alltax1$id != tax_to_del,]
-all_samp<-all_samp[!all_samp$taxonomy_id %in% tax_to_del,-2]
+tax_to_del<-alltax1[alltax1$superkingdom == "", id]
+alltax1 <- alltax1[ !id %in% tax_to_del ]
+all_samp <- all_samp[ !taxonomy_id %in% tax_to_del, -2 ]
+
+# tax_to_del<-alltax1$id[alltax1$superkingdom == ""]
+# alltax1<-alltax1[alltax1$id != tax_to_del,]
+# all_samp<-all_samp[!all_samp$taxonomy_id %in% tax_to_del,-2]
 
 # TODO: remove shuffling in final product.
 # all_samp[[3]]<-sample(all_samp[[3]])
