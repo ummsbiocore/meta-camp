@@ -11,26 +11,26 @@ The core philosophy of the CAMP is anchored in modularity, which is meant to sta
 
 ##### **Short-read Preprocessing**
 
-Raw sequencing datasets are filtered for low-quality bases, low-complexity regions in reads, and extremely short reads using fastp (1). Reads can optionally be deduplicated. Filtered reads are trimmed of adapters using Trimmomatic (2). If host read removal is selected, trimmed and filtered reads are mapped using Bowtie2 and Samtools with the 'very-sensitive' flag to the host reference genome (here, the human reference genome assembly GRCh38 and mouse genome mm10), and mapped reads removed (3,4). As a last-pass, BayesHammer is used to correct sequencing errors (5). FastQC and MultiQC are used to generate overviews (ex. parameters such as per-base quality scores, sequence duplication levels) of processed dataset quality (6,7).
+Raw sequencing datasets are filtered for low-quality bases, low-complexity regions in reads, and extremely short reads using fastp. Reads can optionally be deduplicated. Filtered reads are trimmed of adapters using Trimmomatic. If host read removal is selected, trimmed and filtered reads are mapped using Bowtie2 and Samtools with the 'very-sensitive' flag to the host reference genome (here, the human reference genome assembly GRCh38 and mouse genome mm10), and mapped reads removed. As a last-pass, BayesHammer is used to correct sequencing errors. FastQC and MultiQC are used to generate overviews (ex. parameters such as per-base quality scores, sequence duplication levels) of processed dataset quality.
 
 ##### **Short-read Assembly**
-The processed sequencing reads can be assembled using MetaSPAdes (with optional flags for metaviral and/or plasmid assembly also available), MegaHIT, or both (8,9). Here, only MetaSPAdes was used. The assembly is subsequently summarized using MetaQUAST (10).
+The processed sequencing reads can be assembled using MetaSPAdes (with optional flags for metaviral and/or plasmid assembly also available), MegaHIT, or both. Here, only MetaSPAdes was used. The assembly is subsequently summarized using MetaQUAST.
 
 #### MAG Inference and Quality-Checking
 
 ##### **MAG Binning**
-Processed sequencing reads are mapped back to the de novo assembled contigs using Bowtie2 and Samtools. This read coverage information, along with the contig sequences themselves, are used as input for the following binning algorithms: MetaBAT2, CONCOCT, SemiBin2, MaxBin2, VAMB, and MetaBinner (11 – 16). The sets of MAGs inferred by each algorithm are used as input for DAS Tool, an ensemble binning algorithm, to generate a set of consensus MAGs scored based on the presence/absence of single-copy genes (SCGs) (17).
+Processed sequencing reads are mapped back to the de novo assembled contigs using Bowtie2 and Samtools. This read coverage information, along with the contig sequences themselves, are used as input for the following binning algorithms: MetaBAT2, CONCOCT, SemiBin2, MaxBin2, VAMB, and MetaBinner. The sets of MAGs inferred by each algorithm are used as input for DAS Tool, an ensemble binning algorithm, to generate a set of consensus MAGs scored based on the presence/absence of single-copy genes (SCGs).
 
 ##### **MAG Quality-Checking**
-The consensus refined MAGs are quality-checked using an array of parameters. CheckM2 calculates completeness, which is based on the number of lineage-specific marker gene sets present in a MAG, and contamination, which is the number of over-represented multiple copies of a marker gene in a MAG (18). gunc is also used to assess contamination (19). MAGs are classified using GTDB-Tk, which relies on approximately calculating average nucleotide identity (ANI) to a database of reference genomes (20). For MAGs with a species classification, their contig content is compared to the species' reference genome and genome-based completion, misassembly, and non-alignment statistics calculated using QUAST (21). OTHER ANALYSIS GOALS
+The consensus refined MAGs are quality-checked using an array of parameters. CheckM2 calculates completeness, which is based on the number of lineage-specific marker gene sets present in a MAG, and contamination, which is the number of over-represented multiple copies of a marker gene in a MAG. gunc is also used to assess contamination. MAGs are classified using GTDB-Tk, which relies on approximately calculating average nucleotide identity (ANI) to a database of reference genomes. For MAGs with a species classification, their contig content is compared to the species' reference genome and genome-based completion, misassembly, and non-alignment statistics calculated using QUAST. OTHER ANALYSIS GOALS
 
 #### Other Analysis Goals
 
 ##### **Short Read Taxonomic Classification**
-The processed sequencing reads can be classified using MetaPhlan4, Kraken2/Bracken, and XTree (22 – 25). All three tools were used here. To estimate the relative abundance of a taxon, MetaPhlan4 calculates marker gene coverage, Bracken calculates the proportion of reads assigned to a taxon with k-mer uniqueness-based scaling, and XTree estimates directly from unique k-mer proportions. Since each of these output reports are of different formats, the raw reports from each algorithm are standardized in format for easier comparisons downstream.
+The processed sequencing reads can be classified using MetaPhlan4, Kraken2/Bracken, and XTree. All three tools were used here. To estimate the relative abundance of a taxon, MetaPhlan4 calculates marker gene coverage, Bracken calculates the proportion of reads assigned to a taxon with k-mer uniqueness-based scaling, and XTree estimates directly from unique k-mer proportions. Since each of these output reports are of different formats, the raw reports from each algorithm are standardized in format for easier comparisons downstream.
 
 ##### **Gene Cataloguing**
-Open reading frames (ORFs) are identified in the de novo assembly using Bakta, and clustered using MMSeqs (32, 33). Genes are identified from these ORFs by alignment to the DIAMOND database to obtain the functional profile of the sample (34).
+Open reading frames (ORFs) are identified in the de novo assembly using Bakta, and clustered using MMSeqs. Genes are identified from these ORFs by alignment to the DIAMOND database to obtain the functional profile of the sample.
 
 ### Inputs
 **Required**

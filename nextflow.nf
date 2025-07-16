@@ -40,6 +40,9 @@ if (!params.taxonomy_db){params.taxonomy_db = ""}
 if (!params.checkm1_db){params.checkm1_db = ""} 
 if (!params.metadata){params.metadata = ""} 
 if (!params.genome){params.genome = ""} 
+if (!params.humann3_uniref_db){params.humann3_uniref_db = ""} 
+if (!params.humann3_mpa_db){params.humann3_mpa_db = ""} 
+if (!params.humann3_chocophlan_db){params.humann3_chocophlan_db = ""} 
 // Stage empty file to be used as an optional input where required
 ch_empty_file_1 = file("$baseDir/.emptyfiles/NO_FILE_1", hidden:true)
 ch_empty_file_2 = file("$baseDir/.emptyfiles/NO_FILE_2", hidden:true)
@@ -54,7 +57,7 @@ g_14_1_g57_0 = file(params.diamond_db, type: 'any')
 g_15_1_g57_5 = file(params.gunc_db, type: 'any')
 g_16_0_g57_54 = file(params.gtdb_db, type: 'any')
 Channel.value(params.mate).set{g_42_1_g5_5}
-(g_42_1_g46_0,g_42_1_g46_3,g_42_1_g45_13,g_42_0_g45_43,g_42_1_g45_0,g_42_1_g68_38,g_42_1_g67_0,g_42_1_g67_1) = [g_42_1_g5_5,g_42_1_g5_5,g_42_1_g5_5,g_42_1_g5_5,g_42_1_g5_5,g_42_1_g5_5,g_42_1_g5_5,g_42_1_g5_5]
+(g_42_1_g46_0,g_42_1_g46_3,g_42_1_g45_13,g_42_0_g45_43,g_42_1_g45_0,g_42_1_g68_38,g_42_1_g67_0,g_42_1_g67_1,g_42_0_g74_26) = [g_42_1_g5_5,g_42_1_g5_5,g_42_1_g5_5,g_42_1_g5_5,g_42_1_g5_5,g_42_1_g5_5,g_42_1_g5_5,g_42_1_g5_5,g_42_1_g5_5]
 if (params.reads){
 Channel
 	.fromFilePairs( params.reads,checkExists:true , size: params.mate == "single" ? 1 : params.mate == "pair" ? 2 : params.mate == "triple" ? 3 : params.mate == "quadruple" ? 4 : -1 ) 
@@ -76,6 +79,9 @@ g_52_1_g46_57 = file(params.taxonomy_db, type: 'any')
 g_70_1_g57_55 = file(params.checkm1_db, type: 'any')
 g_72_2_g46_57 = file(params.metadata, type: 'any')
 g_73_0_g45_22 = file(params.genome, type: 'any')
+g_78_3_g74_1 = file(params.humann3_uniref_db, type: 'any')
+g_79_1_g74_1 = file(params.humann3_mpa_db, type: 'any')
+g_80_2_g74_1 = file(params.humann3_chocophlan_db, type: 'any')
 
 //* autofill
 if ($HOSTNAME == "default"){
@@ -3257,6 +3263,166 @@ summarize_reports.py checkm2/${inputPath}/quality_report.tsv strain_het/${inputP
 """
 }
 
+//* autofill
+if ($HOSTNAME == "default"){
+    $CPU  = 1
+    $MEMORY = 4
+}
+//* platform
+//* platform
+//* autofill
+
+process camp_func_profile_BBMap_BBmerge {
+
+input:
+ val mate
+ tuple val(name), file(reads)
+
+output:
+ tuple val(name), file("merged/${name}.fastq.gz")  ,emit:g74_26_reads00_g74_1 
+
+container "quay.io/biocontainers/bbmap:39.28--he5f24ec_0"
+stageInMode 'copy'
+
+when:
+params.mate == "pair"
+
+script:
+threads = task.cpus
+memory = task.memory.toGiga()
+
+reads_str = reads.toString()
+reads_array = reads_str.split(' ')
+
+fastq_1 = reads_array[0]
+fastq_2 = reads_array[1]
+
+"""
+
+mkdir -p merged
+bbmerge.sh in=${fastq_1} in2=${fastq_2} out='merged/'${name}'.fastq.gz' outu1=merged/${fastq_1} outu2=merged/${fastq_2}
+"""
+}
+
+//* autofill
+if ($HOSTNAME == "default"){
+    $CPU  = 12
+    $MEMORY = 64
+}
+//* platform
+//* platform
+//* autofill
+
+process camp_func_profile_HUMAnN {
+
+input:
+ tuple val(name), file(fastq_merged_reads)
+ path humann3_mpa_db
+ path humann3_chocophlan_db
+ path humann3_uniref_db
+
+output:
+ path "humann_out/${name}_genefamilies.tsv"  ,emit:g74_1_outputFileTSV00_g74_35 
+ path "humann_out/${name}_pathabundance.tsv"  ,emit:g74_1_outputFileTSV10_g74_36 
+ path "humann_out/${name}_pathcoverage.tsv"  ,emit:g74_1_outputFileTSV20_g74_37 
+
+container "quay.io/biocontainers/humann:3.9--py312hdfd78af_0"
+stageInMode 'copy'
+
+when:
+params.run_func == "yes" || params.run_humann == "yes"
+
+script:
+threads = task.cpus
+run_humann_from_scratch = "yes" // @dropdown @options:"yes","no" @description:"This option runs metaphlan once more taking that much more time and resource, but since HUMAnN doesn't support more recent versions of MetaPhlAn, this, currently is necessary." @label:"Run HUMAnN exclusively?"
+
+humann3_mpa_index = params.humann3_mpa_index
+
+"""
+mkdir -p 'humann3db/chocophlan/' 'humann3db/uniref/' 'humann3db/metaphlan/'
+
+cp ${humann3_chocophlan_db}/* 'humann3db/chocophlan/'
+cp ${humann3_uniref_db}/* 'humann3db/uniref/'
+cp ${humann3_mpa_db}/* 'humann3db/metaphlan/'
+
+cd 'humann3db/chocophlan/'
+tar -xf 'chocophlan.tar'
+rm 'chocophlan.tar'
+
+cd ../../
+
+humann -i ${fastq_merged_reads} \
+       -o humann_out/ \
+       --threads ${threads} \
+       --nucleotide-database 'humann3db/chocophlan/' \
+       --protein-database 'humann3db/uniref/' \
+       --metaphlan-options '--mpa3 --bowtie2db humann3db/metaphlan/ --index ${humann3_mpa_index}'
+"""
+}
+
+
+process camp_func_profile_FuncMerger_HUMAnN_GeneFam {
+
+publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*.tsv$/) "HUMAnN3/$filename"}
+input:
+ path tsv_files
+
+output:
+ path "*.tsv"  ,emit:g74_35_outputFileTSV00 
+
+container "r-base:4.5.1"
+
+script:
+"""
+mkdir -p merge_dir/
+cp ${tsv_files} merge_dir/
+
+func_merge.R 'merge_dir/'
+"""
+}
+
+
+process camp_func_profile_FuncMerger_HUMAnN_PathAbun {
+
+publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*.tsv$/) "HUMAnN3/$filename"}
+input:
+ path tsv_files
+
+output:
+ path "*.tsv"  ,emit:g74_36_outputFileTSV00 
+
+container "r-base:4.5.1"
+
+script:
+"""
+mkdir -p merge_dir/
+cp ${tsv_files} merge_dir/
+
+func_merge.R 'merge_dir/'
+"""
+}
+
+
+process camp_func_profile_FuncMerger_HUMAnN_PathCov {
+
+publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*.tsv$/) "HUMAnN3/$filename"}
+input:
+ path tsv_files
+
+output:
+ path "*.tsv"  ,emit:g74_37_outputFileTSV00 
+
+container "r-base:4.5.1"
+
+script:
+"""
+mkdir -p merge_dir/
+cp ${tsv_files} merge_dir/
+
+func_merge.R 'merge_dir/'
+"""
+}
+
 
 workflow {
 
@@ -3318,7 +3484,7 @@ g45_18_logOut11 = camp_short_read_quality_control_filter_host_reads.out.g45_18_l
 
 camp_short_read_quality_control_filter_seq_errors(g45_18_reads00_g45_39)
 g45_39_reads00_g45_40 = camp_short_read_quality_control_filter_seq_errors.out.g45_39_reads00_g45_40
-(g45_39_reads04_g45_43,g45_39_reads00_g5_5,g45_39_reads00_g46_0,g45_39_reads00_g46_3,g45_39_reads00_g46_17,g45_39_reads00_g68_38,g45_39_reads00_g67_0,g45_39_reads00_g67_1) = [g45_39_reads00_g45_40,g45_39_reads00_g45_40,g45_39_reads00_g45_40,g45_39_reads00_g45_40,g45_39_reads00_g45_40,g45_39_reads00_g45_40,g45_39_reads00_g45_40,g45_39_reads00_g45_40]
+(g45_39_reads04_g45_43,g45_39_reads00_g5_5,g45_39_reads00_g46_0,g45_39_reads00_g46_3,g45_39_reads00_g46_17,g45_39_reads00_g68_38,g45_39_reads00_g67_0,g45_39_reads00_g67_1,g45_39_reads01_g74_26) = [g45_39_reads00_g45_40,g45_39_reads00_g45_40,g45_39_reads00_g45_40,g45_39_reads00_g45_40,g45_39_reads00_g45_40,g45_39_reads00_g45_40,g45_39_reads00_g45_40,g45_39_reads00_g45_40,g45_39_reads00_g45_40]
 g45_39_reads10_g45_53 = camp_short_read_quality_control_filter_seq_errors.out.g45_39_reads10_g45_53
 
 
@@ -3680,6 +3846,33 @@ g57_5_outputFileTSV03_g57_47 = camp_mag_qc_gunc.out.g57_5_outputFileTSV03_g57_47
 
 camp_mag_qc_summarize_reports(g57_44_outFileTSV00_g57_47.collect(),g57_46_csvFile01_g57_47.collect(),g57_54_outFileTSV22_g57_47.collect(),g57_5_outputFileTSV03_g57_47,g57_0_outFileTSV04_g57_47.collect(),g57_55_outFileTSV05_g57_47.collect(),g57_57_outFileTSV06_g57_47.collect(),g57_60_csvout07_g57_47.collect())
 g57_47_csvout00 = camp_mag_qc_summarize_reports.out.g57_47_csvout00
+
+
+if (!(params.mate == "pair")){
+g45_39_reads01_g74_26.set{g74_26_reads00_g74_1}
+} else {
+
+camp_func_profile_BBMap_BBmerge(g_42_0_g74_26,g45_39_reads01_g74_26)
+g74_26_reads00_g74_1 = camp_func_profile_BBMap_BBmerge.out.g74_26_reads00_g74_1
+}
+
+
+camp_func_profile_HUMAnN(g74_26_reads00_g74_1,g_79_1_g74_1,g_80_2_g74_1,g_78_3_g74_1)
+g74_1_outputFileTSV00_g74_35 = camp_func_profile_HUMAnN.out.g74_1_outputFileTSV00_g74_35
+g74_1_outputFileTSV10_g74_36 = camp_func_profile_HUMAnN.out.g74_1_outputFileTSV10_g74_36
+g74_1_outputFileTSV20_g74_37 = camp_func_profile_HUMAnN.out.g74_1_outputFileTSV20_g74_37
+
+
+camp_func_profile_FuncMerger_HUMAnN_GeneFam(g74_1_outputFileTSV00_g74_35.collect())
+g74_35_outputFileTSV00 = camp_func_profile_FuncMerger_HUMAnN_GeneFam.out.g74_35_outputFileTSV00
+
+
+camp_func_profile_FuncMerger_HUMAnN_PathAbun(g74_1_outputFileTSV10_g74_36.collect())
+g74_36_outputFileTSV00 = camp_func_profile_FuncMerger_HUMAnN_PathAbun.out.g74_36_outputFileTSV00
+
+
+camp_func_profile_FuncMerger_HUMAnN_PathCov(g74_1_outputFileTSV20_g74_37.collect())
+g74_37_outputFileTSV00 = camp_func_profile_FuncMerger_HUMAnN_PathCov.out.g74_37_outputFileTSV00
 
 
 }

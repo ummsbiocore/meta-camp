@@ -66,6 +66,8 @@ all_samp$taxonomy_id<-paste0("ti|", all_samp$taxonomy_id)
 tax_to_del<-alltax1$id[alltax1$superkingdom == ""]
 alltax1<-alltax1[alltax1$id != tax_to_del,]
 all_samp<-all_samp[!all_samp$taxonomy_id %in% tax_to_del,]
+
+all_samp[is.na(all_samp)]<-0
 all_samp[is.na(all_samp)]<-0
 write.table(all_samp, paste0("animalcules_out/", "reads.txt"), row.names = FALSE, quote = FALSE, sep = "\t")
 write.table(alltax1, paste0("animalcules_out/", "taxonomy.txt"), row.names = FALSE, quote = FALSE, sep = "\t")
