@@ -3322,9 +3322,9 @@ input:
  path humann3_uniref_db
 
 output:
- path "humann_out/${name}_genefamilies.tsv"  ,emit:g74_1_outputFileTSV00_g74_35 
- path "humann_out/${name}_pathabundance.tsv"  ,emit:g74_1_outputFileTSV10_g74_36 
- path "humann_out/${name}_pathcoverage.tsv"  ,emit:g74_1_outputFileTSV20_g74_37 
+ path "humann_out/${name}_genefamilies.tsv"  ,emit:g74_1_outputFileTSV00_g74_38 
+ path "humann_out/${name}_pathabundance.tsv"  ,emit:g74_1_outputFileTSV10_g74_39 
+ path "humann_out/${name}_pathcoverage.tsv"  ,emit:g74_1_outputFileTSV20_g74_40 
 
 container "quay.io/biocontainers/humann:3.9--py312hdfd78af_0"
 stageInMode 'copy'
@@ -3361,6 +3361,31 @@ humann -i ${fastq_merged_reads} \
 }
 
 
+process camp_func_profile_HUMAnN_ReNormalize_GeneFamilies {
+
+input:
+ path input_table
+
+output:
+ path "humann_norm/*.tsv"  ,emit:g74_38_outFileTSV00_g74_35 
+
+container "quay.io/biocontainers/humann:3.9--py312hdfd78af_0"
+
+script:
+units = params.camp_func_profile_HUMAnN_ReNormalize_GeneFamilies.units
+mode = params.camp_func_profile_HUMAnN_ReNormalize_GeneFamilies.mode
+special = params.camp_func_profile_HUMAnN_ReNormalize_GeneFamilies.special
+//* @style @multicolumn:{units, mode, special}
+
+"""
+table_name=\$(echo ${input_table} | awk -F/ '{print \$NF}' | sed 's/.tsv//g')
+mkdir -p humann_norm/
+humann_renorm_table -i ${input_table} -u ${units} -m ${mode} -s ${special} -o ./humann_norm/\${table_name}.tsv
+"""
+
+}
+
+
 process camp_func_profile_FuncMerger_HUMAnN_GeneFam {
 
 publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*.tsv$/) "HUMAnN3/$filename"}
@@ -3382,6 +3407,31 @@ func_merge.R 'merge_dir/'
 }
 
 
+process camp_func_profile_HUMAnN_ReNormalize_PathwayAbundance {
+
+input:
+ path input_table
+
+output:
+ path "humann_norm/*.tsv"  ,emit:g74_39_outFileTSV00_g74_36 
+
+container "quay.io/biocontainers/humann:3.9--py312hdfd78af_0"
+
+script:
+units = params.camp_func_profile_HUMAnN_ReNormalize_PathwayAbundance.units
+mode = params.camp_func_profile_HUMAnN_ReNormalize_PathwayAbundance.mode
+special = params.camp_func_profile_HUMAnN_ReNormalize_PathwayAbundance.special
+//* @style @multicolumn:{units, mode, special}
+
+"""
+table_name=\$(echo ${input_table} | awk -F/ '{print \$NF}' | sed 's/.tsv//g')
+mkdir -p humann_norm/
+humann_renorm_table -i ${input_table} -u ${units} -m ${mode} -s ${special} -o ./humann_norm/\${table_name}.tsv
+"""
+
+}
+
+
 process camp_func_profile_FuncMerger_HUMAnN_PathAbun {
 
 publishDir params.outdir, mode: 'copy', saveAs: {filename -> if (filename =~ /.*.tsv$/) "HUMAnN3/$filename"}
@@ -3400,6 +3450,31 @@ cp ${tsv_files} merge_dir/
 
 func_merge.R 'merge_dir/'
 """
+}
+
+
+process camp_func_profile_HUMAnN_ReNormalize_PathwayCoverage {
+
+input:
+ path input_table
+
+output:
+ path "humann_norm/*.tsv"  ,emit:g74_40_outFileTSV00_g74_37 
+
+container "quay.io/biocontainers/humann:3.9--py312hdfd78af_0"
+
+script:
+units = params.camp_func_profile_HUMAnN_ReNormalize_PathwayCoverage.units
+mode = params.camp_func_profile_HUMAnN_ReNormalize_PathwayCoverage.mode
+special = params.camp_func_profile_HUMAnN_ReNormalize_PathwayCoverage.special
+//* @style @multicolumn:{units, mode, special}
+
+"""
+table_name=\$(echo ${input_table} | awk -F/ '{print \$NF}' | sed 's/.tsv//g')
+mkdir -p humann_norm/
+humann_renorm_table -i ${input_table} -u ${units} -m ${mode} -s ${special} -o ./humann_norm/\${table_name}.tsv
+"""
+
 }
 
 
@@ -3858,20 +3933,32 @@ g74_26_reads00_g74_1 = camp_func_profile_BBMap_BBmerge.out.g74_26_reads00_g74_1
 
 
 camp_func_profile_HUMAnN(g74_26_reads00_g74_1,g_79_1_g74_1,g_80_2_g74_1,g_78_3_g74_1)
-g74_1_outputFileTSV00_g74_35 = camp_func_profile_HUMAnN.out.g74_1_outputFileTSV00_g74_35
-g74_1_outputFileTSV10_g74_36 = camp_func_profile_HUMAnN.out.g74_1_outputFileTSV10_g74_36
-g74_1_outputFileTSV20_g74_37 = camp_func_profile_HUMAnN.out.g74_1_outputFileTSV20_g74_37
+g74_1_outputFileTSV00_g74_38 = camp_func_profile_HUMAnN.out.g74_1_outputFileTSV00_g74_38
+g74_1_outputFileTSV10_g74_39 = camp_func_profile_HUMAnN.out.g74_1_outputFileTSV10_g74_39
+g74_1_outputFileTSV20_g74_40 = camp_func_profile_HUMAnN.out.g74_1_outputFileTSV20_g74_40
 
 
-camp_func_profile_FuncMerger_HUMAnN_GeneFam(g74_1_outputFileTSV00_g74_35.collect())
+camp_func_profile_HUMAnN_ReNormalize_GeneFamilies(g74_1_outputFileTSV00_g74_38)
+g74_38_outFileTSV00_g74_35 = camp_func_profile_HUMAnN_ReNormalize_GeneFamilies.out.g74_38_outFileTSV00_g74_35
+
+
+camp_func_profile_FuncMerger_HUMAnN_GeneFam(g74_38_outFileTSV00_g74_35.collect())
 g74_35_outputFileTSV00 = camp_func_profile_FuncMerger_HUMAnN_GeneFam.out.g74_35_outputFileTSV00
 
 
-camp_func_profile_FuncMerger_HUMAnN_PathAbun(g74_1_outputFileTSV10_g74_36.collect())
+camp_func_profile_HUMAnN_ReNormalize_PathwayAbundance(g74_1_outputFileTSV10_g74_39)
+g74_39_outFileTSV00_g74_36 = camp_func_profile_HUMAnN_ReNormalize_PathwayAbundance.out.g74_39_outFileTSV00_g74_36
+
+
+camp_func_profile_FuncMerger_HUMAnN_PathAbun(g74_39_outFileTSV00_g74_36.collect())
 g74_36_outputFileTSV00 = camp_func_profile_FuncMerger_HUMAnN_PathAbun.out.g74_36_outputFileTSV00
 
 
-camp_func_profile_FuncMerger_HUMAnN_PathCov(g74_1_outputFileTSV20_g74_37.collect())
+camp_func_profile_HUMAnN_ReNormalize_PathwayCoverage(g74_1_outputFileTSV20_g74_40)
+g74_40_outFileTSV00_g74_37 = camp_func_profile_HUMAnN_ReNormalize_PathwayCoverage.out.g74_40_outFileTSV00_g74_37
+
+
+camp_func_profile_FuncMerger_HUMAnN_PathCov(g74_40_outFileTSV00_g74_37.collect())
 g74_37_outputFileTSV00 = camp_func_profile_FuncMerger_HUMAnN_PathCov.out.g74_37_outputFileTSV00
 
 
