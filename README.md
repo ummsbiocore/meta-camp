@@ -1,3 +1,4 @@
+[![Static Badge](https://img.shields.io/badge/DOI-10.1101%22023.04.09.536171-blue?style=for-the-badge)](https://doi.org/10.1101/2023.04.09.536171)
 ## Meta-CAMP
 
 The MetaSUB Core Modular Analysis Pipeline, the CAMP, is a software toolkit designed for dynamic and educational analyses of metagenomes, bacterial isolates, and, in general, all things microbial. It is the primary analytic workflow for the MetaSUB Consortium.
