@@ -286,7 +286,7 @@ input:
 output:
  path "*/${bowtie2new}" ,optional:true  ,emit:g45_21_bowtie2index01_g45_18 
 
-container 'quay.io/viascientific/pipeline_base_image:1.0'
+container 'quay.io/ummsbiocore/pipeline_base_image:1.0'
 stageInMode 'copy'
 
 when:
@@ -370,7 +370,7 @@ output:
  tuple val(name),file("error_removal/${name}_[1-2].fastq.gz")  ,emit:g45_39_reads00_g45_40 
  path "error_removal/${name}_[1-2].fastq.gz"  ,emit:g45_39_reads10_g45_53 
 
-container 'quay.io/viascientific/spades-tadpole:1.0.0'
+container 'quay.io/ummsbiocore/spades-tadpole:1.0.0'
 
 script:
 
@@ -681,7 +681,7 @@ input:
 output:
  tuple val(name), file("metaphlan/*.fastq")  ,emit:g46_3_fastq_reads00_g46_18 
 
-container "quay.io/viascientific/python-basics:3.0"
+container "quay.io/ummsbiocore/python-basics:3.0"
 
 when:
 (params.scrub_fastq_captions && (params.scrub_fastq_captions == "yes")) || !params.scrub_fastq_captions
@@ -1106,7 +1106,7 @@ output:
  path "xtree/*.ref"  ,emit:g46_32_reference00_g46_40 
  path "xtree/*.cov"  ,emit:g46_32_coverage11_g46_40 
 
-container "quay.io/viascientific/xtree:1.0.0"
+container "quay.io/ummsbiocore/xtree:1.0.0"
 
 script:
 
@@ -1210,7 +1210,7 @@ output:
  path "microviz_out/*.txt" ,optional:true  ,emit:g46_57_outputFileTxt11 
  path "microviz_out/*.rds" ,optional:true  ,emit:g46_57_gene_dep_scores22 
 
-container 'quay.io/viascientific/shiny_taxonomy:1.0.0'
+container 'quay.io/ummsbiocore/shiny_taxonomy:1.0.0'
 stageInMode 'copy'
 
 script:
@@ -1450,7 +1450,7 @@ output:
  path "mmseqs/merged_cluster_sizes.csv"  ,emit:g5_3_csvout03_g5_16 
  path "mmseqs/merged_filt_seq.fasta"  ,emit:g5_3_fasta10_g5_4 
 
-container 'quay.io/viascientific/python-basics:3.0'
+container 'quay.io/ummsbiocore/python-basics:3.0'
 
 script:
 
@@ -1775,7 +1775,7 @@ output:
 
 stageInMode 'copy'
 container "quay.io/biocontainers/bowtie2:2.5.4--he96a11b_6"
-//public.ecr.aws/t4w5x8f2/viascientific/chipatacseq:1.0
+//quay.io/ummsbiocore/chipatacseq:1.0
 
 script:
 threads = task.cpus
@@ -2297,7 +2297,7 @@ output:
  path "${name}_vamb.log" ,optional:true  ,emit:g68_61_logFile00 
  path "${name}_bins_vamb" ,optional:true  ,emit:g68_61_outputDir10_g68_73 
 
-container "quay.io/viascientific/vamb:4.1.4-c"
+container "quay.io/ummsbiocore/vamb:4.1.4-c"
 //container "${ params.processing_type == 'gpu' ? 'quay/mycont:1.0-gpu' : 'quay/mycont:1.0-cpu' }"
 errorStrategy 'ignore'
 
@@ -2994,7 +2994,7 @@ output:
  tuple val("${fastaPath}"), file("dnadiff/${fastaPath}/*.ref.fa")  ,emit:g57_54_fastaSet10_g57_45 
  path "gtdbtk/${fastaPath}"  ,emit:g57_54_outFileTSV22_g57_47 
 
-container 'quay.io/viascientific/gtdbtk_mummer:1.0.0'
+container 'quay.io/ummsbiocore/gtdbtk_mummer:1.0.0'
 stageInMode 'copy' 
 
 when:
